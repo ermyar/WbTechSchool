@@ -29,34 +29,46 @@ func getPostgresUrl(log *slog.Logger) string {
 		RawQuery: sslsetup,
 	}
 
-	urlPG := url.String()
+	return url.String()
+}
 
+type Connection struct {
+	conn *pgx.Conn
+	log  *slog.Logger
+}
+
+func GetPostgresConn(log *slog.Logger, ctx context.Context) (*Connection, error) {
+
+	urlPG := getPostgresUrl(log)
 	log.Info("try to connect", slog.String("address", urlPG))
 
-	return urlPG
+	conn, err := pgx.Connect(ctx, urlPG)
+	return &Connection{conn: conn, log: log}, err
 }
 
-func GetPostgresConn(log *slog.Logger, ctx context.Context) (*pgx.Conn, error) {
-
-	conn, err := pgx.Connect(ctx, getPostgresUrl(log))
-
-	return conn, err
+func (c *Connection) CheckAlive(ctx context.Context) {
+	if err := c.conn.Ping(ctx); err != nil {
+		c.log.Error("Postgres: cant ping", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
 }
 
-func MustGetAlivePostgresConn(log *slog.Logger, ctx context.Context) *pgx.Conn {
+func MustGetAlivePostgresConn(log *slog.Logger, ctx context.Context) *Connection {
 	conn, err := GetPostgresConn(log, ctx)
 
 	if err != nil {
-		log.Error("unable to connect to Postgres", slog.String("error", err.Error()))
+		conn.log.Error("Postgres: unable to connect", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
 
-	if err := conn.Ping(ctx); err != nil {
-		log.Error("cant ping Postgres", slog.String("error", err.Error()))
-		os.Exit(1)
-	}
+	conn.CheckAlive(ctx)
 
-	log.Info("connected to Postgres succesfully")
+	conn.log.Info("Postgres: connected succesfully")
 
 	return conn
+}
+
+func (c *Connection) Close(ctx context.Context) {
+	c.log.Info("Postgres: closing connection")
+	c.conn.Close(ctx)
 }
