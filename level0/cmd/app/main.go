@@ -21,22 +21,20 @@ func main() {
 	ctx := context.Background()
 	conn := help.MustGetAlivePostgresConn(log, ctx)
 
-	consm := k.NewConsumer(strings.Fields(os.Getenv("KAFKA_BROKERS")), os.Getenv("KAFKA_CONSUME_TOPIC"), "group-id", log, conn)
+	appa := App{
+		conn: conn,
+		log:  log,
+	}
 
 	intr, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	// gracefull shutdown
-	go func() {
-		// signal came, should stop
-		<-intr.Done()
+	appa.consumer = k.NewConsumer(strings.Fields(os.Getenv("KAFKA_BROKERS")),
+		os.Getenv("KAFKA_CONSUME_TOPIC"), "consumer-group-id", log, &appa, intr)
 
-		consm.Stop()
-		conn.Close(context.Background())
-	}()
-
-	if err := consm.Start(log); err != nil {
-		os.Exit(2)
+	if err := appa.Start(); err != nil {
+		log.Info("Exit")
+		os.Exit(1)
 	}
 }
 

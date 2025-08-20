@@ -54,8 +54,3 @@ CREATE TABLE Items (
   status INTEGER NOT NULL,
   FOREIGN KEY (order_uid) REFERENCES Orders(order_uid) ON DELETE CASCADE
 );
-
-CREATE TABLE test (
-  a VARCHAR(50),
-  b INTEGER
-);
