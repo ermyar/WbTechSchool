@@ -4,5 +4,8 @@ build:
 run:
 	docker compose -f 'docker-compose.yaml' up -d --build 'app'
 
-run-producer:
+go-producer: 
 	go run ./cmd/producer/main.go
+
+kafka:
+	docker compose -f 'docker-compose.yaml' up -d kafka-ui

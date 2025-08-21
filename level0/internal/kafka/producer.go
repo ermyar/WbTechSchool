@@ -48,3 +48,12 @@ func (p *Producer) Stop() error {
 
 	return nil
 }
+
+// use to connect with leader (when auto.create.topics.enable='true')
+func GetConn(ctx context.Context, address, topic string) (*kafka.Conn, error) {
+	conn, err := kafka.DialLeader(context.Background(), "tcp", address, topic, 0)
+	if err != nil {
+		return nil, err
+	}
+	return conn, nil
+}
