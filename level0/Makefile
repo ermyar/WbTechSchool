@@ -9,3 +9,6 @@ go-producer:
 
 kafka:
 	docker compose -f 'docker-compose.yaml' up -d kafka-ui
+
+clean:
+	docker compose down

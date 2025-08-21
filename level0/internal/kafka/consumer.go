@@ -28,17 +28,18 @@ func NewConsumer(address []string, topic, groupID string, log *slog.Logger, hand
 		GroupID:  groupID,
 		MaxBytes: 1e6, // 10Mb
 		Logger:   slog.NewLogLogger(log.Handler(), slog.LevelInfo),
+
 		// CommitInterval: 10 * time.Second, // 10s
 	})
 
 	return &Consumer{reader: r, ctx: ctx, stop: make(chan struct{}), handlerMsg: handler, log: log}
 }
 
-func (c *Consumer) ConsumeAndHandle() error {
+func (c *Consumer) ConsumeAndHandle(ctx context.Context) error {
 	c.log.Info("Consume and Handle called")
 
 	// fetching msg
-	kafkaMsg, err := c.reader.FetchMessage(context.Background())
+	kafkaMsg, err := c.reader.FetchMessage(ctx)
 
 	if err == io.EOF {
 		c.log.Info("Reader has been closed")
@@ -58,7 +59,7 @@ func (c *Consumer) ConsumeAndHandle() error {
 	}
 
 	// commiting Msg
-	if err := c.reader.CommitMessages(context.Background(), kafkaMsg); err != nil {
+	if err := c.reader.CommitMessages(ctx, kafkaMsg); err != nil {
 		c.log.Error("Kafka: while commiting", slog.String("error", err.Error()))
 		return err
 	}
@@ -79,17 +80,28 @@ func (c *Consumer) Start() error {
 			c.log.Warn("Consumer stop caused by ctx")
 			return nil
 		default:
-			if err := c.ConsumeAndHandle(); err != nil {
+			if err := c.ConsumeAndHandle(c.ctx); err != nil {
 				return err
 			}
 		}
 	}
 }
 
-// Closing connection and stop reading from Kafka
+// Closing connection and stop reading from Kafka.
+// Blocking function to chan c.stop.
 func (c *Consumer) Stop() {
-
-	c.log.Info("Kafka: closing consuming")
+	c.log.Info("Kafka: stopping consuming")
 	c.stop <- struct{}{}
-	c.reader.Close()
+}
+
+// Closing connection with Kafka.
+// Should be called after Start finish.
+// non-blocking func to chan c.stop.
+func (c *Consumer) Close() {
+	c.log.Info("Kafka: closing consumer's connection")
+
+	// may be extra error handling
+	if err := c.reader.Close(); err != nil {
+		c.log.Error("Kafka: Close writer", slog.String("error:", err.Error()))
+	}
 }

@@ -39,7 +39,7 @@ func GetRandomOrder() (*OrderJSON, error) {
 		return nil, err
 	}
 
-	// fixing randGen
+	// fixing randGen for better data (important to keep it)
 	for i := range order.Items {
 		order.Items[i].Track_number = order.Track_number
 	}

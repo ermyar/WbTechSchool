@@ -24,7 +24,15 @@ func (a *App) Stop(ctx context.Context) {
 	a.consumer.Stop()
 }
 
+func (a *App) Close(ctx context.Context) {
+	a.log.Info("Close: closing app's connections")
+	a.conn.Close(ctx)
+	a.consumer.Close()
+}
+
 func (a *App) Start() error {
+	defer a.Close(context.Background())
+
 	if err := a.consumer.Start(); err != nil {
 		a.log.Error("App stopped with error", slog.String("error", err.Error()))
 		return err
