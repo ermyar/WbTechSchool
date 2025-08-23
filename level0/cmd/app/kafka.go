@@ -4,18 +4,63 @@ import (
 	"context"
 	"log/slog"
 
+	j "github.com/ermyar/WbTechSchool/l0/internal/json"
 	"github.com/ermyar/WbTechSchool/l0/internal/kafka"
-	"github.com/jackc/pgx/v4"
+	"github.com/ermyar/WbTechSchool/l0/internal/pgxhelp"
 )
 
 type App struct {
-	conn     *pgx.Conn
+	conn     *pgxhelp.PgConnection
 	consumer *kafka.Consumer
 	log      *slog.Logger
 }
 
-func (a *App) Handle(ar []byte) error {
-	a.log.Info("Received from Kafka", slog.String("MESSAGE", string(ar)))
+// putting this data in database (postgres)
+func (a *App) Handle(ctx context.Context, ar []byte) error {
+	order, err := j.GetJson(a.log, ar)
+
+	if err != nil {
+		a.log.Error("Error while handling", slog.String("error", err.Error()))
+		// skiping this case, just commit and go on
+		return err
+	}
+
+	err = a.conn.Insert(ctx, "Orders", order.Order_uid, order.Track_number,
+		order.Entry, order.Locate, order.Customer_id, order.Delivery_service,
+		order.Shardkey, order.Sm_id, order.Date_created, order.Oof_shard, order.Internal_signature)
+	if err != nil {
+		a.log.Error("Handle: Error while inserting into Orders", slog.String("error", err.Error()))
+		return err
+	}
+	err = a.conn.Insert(ctx, "Delivery", order.Order_uid, order.Delivery.Name,
+		order.Delivery.Phone, order.Delivery.Zip, order.Delivery.City,
+		order.Delivery.Address, order.Delivery.Region, order.Delivery.Email)
+	if err != nil {
+		a.log.Error("Handle: Error while inserting into Delivery", slog.String("error", err.Error()))
+		return err
+	}
+
+	err = a.conn.Insert(ctx, "Payment", order.Payment.Transaction, order.Order_uid,
+		order.Payment.Request_id, order.Payment.Currency, order.Payment.Provider,
+		order.Payment.Amount, order.Payment.Payment_dt, order.Payment.Bank,
+		order.Payment.Delivery_cost, order.Payment.Goods_total, order.Payment.Custom_fee)
+	if err != nil {
+		a.log.Error("Handle: Error while inserting into Payment", slog.String("error", err.Error()))
+		return err
+	}
+
+	for _, item := range order.Items {
+		err = a.conn.Insert(ctx, "Items", item.Chrt_id, order.Order_uid, item.Track_number,
+			item.Price, item.Rid, item.Name, item.Sale, item.Size, item.Total_price, item.Nm_id,
+			item.Brand, item.Status)
+		if err != nil {
+			a.log.Error("Handle: Error while inserting into Items", slog.String("error", err.Error()))
+			return err
+		}
+	}
+
+	a.log.Info("Handled succesfully!")
+
 	return nil
 }
 

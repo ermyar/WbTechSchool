@@ -2,34 +2,35 @@ package kafka
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 
+	"github.com/ermyar/WbTechSchool/l0/internal/json"
+	"github.com/ermyar/WbTechSchool/l0/internal/pgxhelp"
 	"github.com/segmentio/kafka-go"
 )
 
-type Handler interface {
-	Handle([]byte) error
+type iHandler interface {
+	Handle(context.Context, []byte) error
 }
 
 type Consumer struct {
 	ctx        context.Context
 	stop       chan struct{}
 	reader     *kafka.Reader
-	handlerMsg Handler
+	handlerMsg iHandler
 	log        *slog.Logger
 }
 
 // Create and initiate new Consumer.
-func NewConsumer(address []string, topic, groupID string, log *slog.Logger, handler Handler, ctx context.Context) *Consumer {
+func NewConsumer(address []string, topic, groupID string, log *slog.Logger, handler iHandler, ctx context.Context) *Consumer {
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:  address,
 		Topic:    topic,
 		GroupID:  groupID,
 		MaxBytes: 1e6, // 10Mb
 		Logger:   slog.NewLogLogger(log.Handler(), slog.LevelInfo),
-
-		// CommitInterval: 10 * time.Second, // 10s
 	})
 
 	return &Consumer{reader: r, ctx: ctx, stop: make(chan struct{}), handlerMsg: handler, log: log}
@@ -53,9 +54,12 @@ func (c *Consumer) ConsumeAndHandle(ctx context.Context) error {
 
 	// handle Msg
 	// important not to loose Msg!
-	if err = c.handlerMsg.Handle(kafkaMsg.Value); err != nil {
+	// but Msg can be wrong! in this case returns special error: WrongDataErr
+	if err = c.handlerMsg.Handle(ctx, kafkaMsg.Value); err != nil {
 		c.log.Error("Handle crashed while consuming", slog.String("error", err.Error()))
-		return err
+		if !(errors.Is(err, pgxhelp.ErrWrongData) || errors.Is(err, json.ErrWrongData)) {
+			return err
+		}
 	}
 
 	// commiting Msg

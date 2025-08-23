@@ -30,13 +30,13 @@ type DeliveryJSON struct {
 }
 
 type ItemJSON struct {
-	Chrt_id      int    `json:"chrt_id"`
+	Chrt_id      int    `json:"chrt_id" faker:"unique"`
 	Track_number string `json:"track_number"`
 	Price        int    `json:"price"`
 	Rid          string `json:"rid"`
 	Name         string `json:"name" faker:"word,unique"`
-	Sale         int    `json:"sale" faker:"boundary_start=0, boundary_end=100"`
-	Size         int    `json:"size"`
+	Sale         int    `json:"sale" faker:"boundary_start=1, boundary_end=100"`
+	Size         string `json:"size"`
 	Total_price  int    `json:"total_price"`
 	Nm_id        int    `json:"nm_id"`
 	Brand        string `json:"brand"`

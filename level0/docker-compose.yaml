@@ -6,13 +6,13 @@ services:
     image: postgres:latest
     environment: 
       POSTGRES_DB: "${DB_NAME}"
-      POSTGRES_USER: "${USER}"
-      POSTGRES_PASSWORD: "${PASS}"
+      POSTGRES_USER: "${PG_USER}"
+      POSTGRES_PASSWORD: "${PG_PASS}"
     ports:
       - "${POSTGRES_PORT}:5432"
     volumes:
       - ./scripts/postgres_init.sql:/docker-entrypoint-initdb.d/postgres_init.sql
- 
+
   app:
     restart: on-failure
     container_name: level0-app
@@ -21,8 +21,8 @@ services:
       - "${APP_PORT}:8080"
     environment: 
       POSTGRES_NAME: "${DB_NAME}"
-      POSTGRES_USER: "${USER}"
-      POSTGRES_PASS: "${PASS}"
+      POSTGRES_USER: "${PG_USER}"
+      POSTGRES_PASS: "${PG_PASS}"
       KAFKA_CONSUME_TOPIC: "orders"
       KAFKA_BROKERS: "kafka1:29091"
     depends_on:

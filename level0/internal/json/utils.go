@@ -2,19 +2,21 @@ package json
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 
 	"github.com/go-faker/faker/v4"
 )
 
+var ErrWrongData = errors.New("wrong data incame")
+
 func GetJson(log *slog.Logger, ar []byte) (*OrderJSON, error) {
 	log.Info("JSON: unmarshalling bytes to order")
 	var order OrderJSON
 
-	err := json.Unmarshal(ar, &order)
-	if err != nil {
+	if err := json.Unmarshal(ar, &order); err != nil {
 		log.Error("Unable to unmarshal", slog.String("error", err.Error()))
-		return nil, err
+		return nil, ErrWrongData
 	}
 
 	return &order, nil

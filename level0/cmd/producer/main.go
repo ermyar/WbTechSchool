@@ -19,6 +19,7 @@ const (
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	pr := k.NewProducer([]string{kafkaAdrr}, kafkaTopic, log)
+	defer pr.Close()
 
 	// creating topic if it's no there
 	_, err := k.GetConn(context.Background(), kafkaAdrr, kafkaTopic)
@@ -33,7 +34,6 @@ func main() {
 
 	if err := pr.Start(ctx, 2*time.Second); err != nil {
 		log.Error("Start: finished with", slog.String("error", err.Error()))
-		os.Exit(1)
+		return
 	}
-	pr.Close()
 }

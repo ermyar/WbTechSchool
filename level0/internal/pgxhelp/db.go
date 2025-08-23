@@ -32,16 +32,31 @@ func getPostgresUrl(log *slog.Logger) string {
 	return url.String()
 }
 
-func GetPostgresConn(log *slog.Logger, ctx context.Context) (*pgx.Conn, error) {
+type PgConnection struct {
+	conn *pgx.Conn
+	log  *slog.Logger
+}
+
+func (pgc *PgConnection) Ping(ctx context.Context) error {
+	pgc.log.Info("pinging our Postgres connection")
+	return pgc.conn.Ping(ctx)
+}
+
+func (pgc *PgConnection) Close(ctx context.Context) {
+	pgc.log.Info("Closing Postgres Connection")
+	pgc.conn.Close(ctx)
+}
+
+func GetPostgresConn(log *slog.Logger, ctx context.Context) (*PgConnection, error) {
 
 	urlPG := getPostgresUrl(log)
 	log.Info("try to connect", slog.String("address", urlPG))
 
 	conn, err := pgx.Connect(ctx, urlPG)
-	return conn, err
+	return &PgConnection{conn, log}, err
 }
 
-func MustGetAlivePostgresConn(log *slog.Logger, ctx context.Context) *pgx.Conn {
+func MustGetAlivePostgresConn(log *slog.Logger, ctx context.Context) *PgConnection {
 	conn, err := GetPostgresConn(log, ctx)
 
 	if err != nil {
