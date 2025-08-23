@@ -9,6 +9,7 @@ import (
 	"time"
 
 	k "github.com/ermyar/WbTechSchool/l0/internal/kafka"
+	"github.com/ermyar/WbTechSchool/l0/internal/utils"
 )
 
 const (
@@ -33,7 +34,7 @@ func main() {
 	defer stop()
 
 	if err := pr.Start(ctx, 2*time.Second); err != nil {
-		log.Error("Start: finished with", slog.String("error", err.Error()))
+		log.Error("Start: finished with", utils.SlogError(err))
 		return
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 
+	"github.com/ermyar/WbTechSchool/l0/internal/utils"
 	"github.com/go-faker/faker/v4"
 )
 
@@ -15,7 +16,7 @@ func GetJson(log *slog.Logger, ar []byte) (*OrderJSON, error) {
 	var order OrderJSON
 
 	if err := json.Unmarshal(ar, &order); err != nil {
-		log.Error("Unable to unmarshal", slog.String("error", err.Error()))
+		log.Error("Unable to unmarshal", utils.SlogError(err))
 		return nil, ErrWrongData
 	}
 
@@ -27,7 +28,7 @@ func GetBytes(log *slog.Logger, val *OrderJSON) ([]byte, error) {
 
 	bytes, err := json.Marshal(val)
 	if err != nil {
-		log.Error("Unable to marshal", slog.String("error", err.Error()))
+		log.Error("Unable to marshal", utils.SlogError(err))
 		return nil, err
 	}
 

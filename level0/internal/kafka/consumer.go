@@ -6,8 +6,8 @@ import (
 	"io"
 	"log/slog"
 
-	"github.com/ermyar/WbTechSchool/l0/internal/json"
-	"github.com/ermyar/WbTechSchool/l0/internal/pgxhelp"
+	"github.com/ermyar/WbTechSchool/l0/internal/utils"
+
 	"github.com/segmentio/kafka-go"
 )
 
@@ -48,7 +48,7 @@ func (c *Consumer) ConsumeAndHandle(ctx context.Context) error {
 	}
 
 	if err != nil {
-		c.log.Error("Kafka: while reading", slog.String("error", err.Error()))
+		c.log.Error("Kafka: while reading", utils.SlogError(err))
 		return err
 	}
 
@@ -56,15 +56,15 @@ func (c *Consumer) ConsumeAndHandle(ctx context.Context) error {
 	// important not to loose Msg!
 	// but Msg can be wrong! in this case returns special error: WrongDataErr
 	if err = c.handlerMsg.Handle(ctx, kafkaMsg.Value); err != nil {
-		c.log.Error("Handle crashed while consuming", slog.String("error", err.Error()))
-		if !(errors.Is(err, pgxhelp.ErrWrongData) || errors.Is(err, json.ErrWrongData)) {
+		c.log.Error("Handle crashed while consuming", utils.SlogError(err))
+		if !errors.Is(err, utils.ErrWrongData) {
 			return err
 		}
 	}
 
 	// commiting Msg
 	if err := c.reader.CommitMessages(ctx, kafkaMsg); err != nil {
-		c.log.Error("Kafka: while commiting", slog.String("error", err.Error()))
+		c.log.Error("Kafka: while commiting", utils.SlogError(err))
 		return err
 	}
 
@@ -106,6 +106,6 @@ func (c *Consumer) Close() {
 
 	// may be extra error handling
 	if err := c.reader.Close(); err != nil {
-		c.log.Error("Kafka: Close writer", slog.String("error:", err.Error()))
+		c.log.Error("Kafka: Close writer", utils.SlogError(err))
 	}
 }

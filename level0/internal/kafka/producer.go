@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ermyar/WbTechSchool/l0/internal/json"
+	"github.com/ermyar/WbTechSchool/l0/internal/utils"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -56,12 +57,12 @@ func (p *Producer) Start(ctx context.Context, t time.Duration) error {
 		default:
 			ord, err := json.GetRandomOrder()
 			if err != nil {
-				p.log.Error("error while generating ", slog.String("error", err.Error()))
+				p.log.Error("error while generating ", utils.SlogError(err))
 				continue
 			}
 			bytes, err := json.GetBytes(p.log, ord)
 			if err != nil {
-				p.log.Error("error while marshalling ", slog.String("error", err.Error()))
+				p.log.Error("error while marshalling ", utils.SlogError(err))
 				continue
 			}
 			p.Produce(ctx, []byte("order"), bytes)

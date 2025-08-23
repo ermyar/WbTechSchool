@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/ermyar/WbTechSchool/l0/internal/utils"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -60,12 +61,12 @@ func MustGetAlivePostgresConn(log *slog.Logger, ctx context.Context) *PgConnecti
 	conn, err := GetPostgresConn(log, ctx)
 
 	if err != nil {
-		log.Error("Postgres: unable to connect", slog.String("error", err.Error()))
+		log.Error("Postgres: unable to connect", utils.SlogError(err))
 		os.Exit(1)
 	}
 
 	if err := conn.Ping(ctx); err != nil {
-		log.Error("Postgres: cant ping", slog.String("error", err.Error()))
+		log.Error("Postgres: cant ping", utils.SlogError(err))
 		os.Exit(1)
 	}
 

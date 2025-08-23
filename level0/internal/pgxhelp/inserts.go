@@ -2,17 +2,15 @@ package pgxhelp
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"log/slog"
 	"strings"
+
+	"github.com/ermyar/WbTechSchool/l0/internal/utils"
 )
 
 const (
 	baseStr = "INSERT INTO %s VALUES "
 )
-
-var ErrWrongData = errors.New("wrong data incame")
 
 func getArgList(len int) string {
 	stb := strings.Builder{}
@@ -36,9 +34,9 @@ func (conn *PgConnection) Insert(ctx context.Context, name string, args ...inter
 	_, err := conn.conn.Exec(ctx, buildSqlStr(name, len(args)), args...)
 
 	if err != nil {
-		conn.log.Error("Insert: error occur", slog.String("error", err.Error()))
+		conn.log.Error("Insert: error occur", utils.SlogError(err))
 		if err1 := conn.Ping(ctx); err1 == nil {
-			return ErrWrongData
+			return utils.ErrWrongData
 		}
 		return err
 	}
