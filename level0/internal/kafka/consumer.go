@@ -11,7 +11,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-type iHandler interface {
+type Handler interface {
 	Handle(context.Context, []byte) error
 }
 
@@ -19,12 +19,12 @@ type Consumer struct {
 	ctx        context.Context
 	stop       chan struct{}
 	reader     *kafka.Reader
-	handlerMsg iHandler
+	handlerMsg Handler
 	log        *slog.Logger
 }
 
 // Create and initiate new Consumer.
-func NewConsumer(address []string, topic, groupID string, log *slog.Logger, handler iHandler, ctx context.Context) *Consumer {
+func NewConsumer(address []string, topic, groupID string, log *slog.Logger, handler Handler, ctx context.Context) *Consumer {
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:  address,
 		Topic:    topic,
