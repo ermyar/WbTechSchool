@@ -41,7 +41,5 @@ func (conn *PgConnection) Insert(ctx context.Context, name string, args ...inter
 		return err
 	}
 
-	conn.log.Info("Inserted succesfully")
-
 	return nil
 }

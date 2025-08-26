@@ -5,12 +5,16 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 
 	k "github.com/ermyar/WbTechSchool/l0/internal/kafka"
+	"github.com/ermyar/WbTechSchool/l0/internal/lru"
 	help "github.com/ermyar/WbTechSchool/l0/internal/pgxhelp"
 )
+
+var app App
 
 func main() {
 
@@ -21,18 +25,21 @@ func main() {
 	ctx := context.Background()
 	conn := help.MustGetAlivePostgresConn(log, ctx)
 
-	appa := App{
+	capacity, _ := strconv.Atoi(os.Getenv("LRU_CAPACITY"))
+
+	app = App{
 		conn: conn,
 		log:  log,
+		lru:  lru.NewLru[string](capacity),
 	}
 
 	intr, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	appa.consumer = k.NewConsumer(strings.Fields(os.Getenv("KAFKA_BROKERS")),
-		os.Getenv("KAFKA_CONSUME_TOPIC"), "consumer-group-id", log, &appa, intr)
+	app.consumer = k.NewConsumer(strings.Fields(os.Getenv("KAFKA_BROKERS")),
+		os.Getenv("KAFKA_CONSUME_TOPIC"), "consumer-group-id", log, &app, intr)
 
-	if err := appa.Start(); err != nil {
+	if err := app.Start(); err != nil {
 		log.Info("Exit")
 		os.Exit(1)
 	}

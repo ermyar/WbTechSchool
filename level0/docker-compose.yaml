@@ -25,6 +25,7 @@ services:
       POSTGRES_PASS: "${PG_PASS}"
       KAFKA_CONSUME_TOPIC: "orders"
       KAFKA_BROKERS: "kafka1:29091"
+      LRU_CAPACITY: 1000
     depends_on:
       - postgres
       - kafka-ui

@@ -12,7 +12,6 @@ import (
 var ErrWrongData = errors.New("wrong data incame")
 
 func GetJson(log *slog.Logger, ar []byte) (*OrderJSON, error) {
-	log.Info("JSON: unmarshalling bytes to order")
 	var order OrderJSON
 
 	if err := json.Unmarshal(ar, &order); err != nil {
