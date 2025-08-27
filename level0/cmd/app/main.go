@@ -11,7 +11,6 @@ import (
 
 	k "github.com/ermyar/WbTechSchool/l0/internal/kafka"
 	"github.com/ermyar/WbTechSchool/l0/internal/lru"
-	help "github.com/ermyar/WbTechSchool/l0/internal/pgxhelp"
 )
 
 var app App
@@ -21,16 +20,16 @@ func main() {
 	// init & setup slog.Logger
 	log := setupLogger()
 
-	// Postgres Connection
-	ctx := context.Background()
-	conn := help.MustGetAlivePostgresConn(log, ctx)
+	capacity, err := strconv.Atoi(os.Getenv("LRU_CAPACITY"))
 
-	capacity, _ := strconv.Atoi(os.Getenv("LRU_CAPACITY"))
+	if err != nil {
+		log.Info("LRU_CAPACITY env is not a number")
+		os.Exit(1)
+	}
 
 	app = App{
-		conn: conn,
-		log:  log,
-		lru:  lru.NewLru[string](capacity),
+		log: log,
+		lru: lru.NewLru[string](capacity),
 	}
 
 	intr, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

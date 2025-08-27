@@ -9,6 +9,8 @@ type Cache[T comparable] interface {
 
 	Set(T, interface{}) error
 
+	Capacity() int
+
 	Clear()
 }
 
@@ -57,6 +59,10 @@ func (lru *Lru[T]) Clear() {
 	for k := range lru.mp {
 		delete(lru.mp, k)
 	}
+}
+
+func (lru *Lru[T]) Capacity() int {
+	return lru.capacity
 }
 
 func NewLru[T comparable](capacity int) Cache[T] {

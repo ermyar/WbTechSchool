@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-func getPostgresUrl(log *slog.Logger) string {
+func getPostgresUrl() string {
 	const (
 		hostAddress = "postgres:5432"
 		sslsetup    = "sslmode=disable"
@@ -49,8 +49,7 @@ func (pgc *PgConnection) Close(ctx context.Context) {
 }
 
 func GetPostgresConn(log *slog.Logger, ctx context.Context) (*PgConnection, error) {
-
-	urlPG := getPostgresUrl(log)
+	urlPG := getPostgresUrl()
 	log.Info("try to connect", slog.String("address", urlPG))
 
 	conn, err := pgx.Connect(ctx, urlPG)

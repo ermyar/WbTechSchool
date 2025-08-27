@@ -81,6 +81,14 @@ func (a *App) Close(ctx context.Context) {
 }
 
 func (a *App) Start() error {
+	// Postgres Connection
+	ctx := context.Background()
+	a.conn = pgxhelp.MustGetAlivePostgresConn(a.log, ctx)
+
+	// on start getting data from postgres to fill cache.
+	a.log.Info("Filling cache")
+	a.conn.InitiateCache(a.lru)
+
 	defer a.Close(context.Background())
 
 	ch := make(chan error)

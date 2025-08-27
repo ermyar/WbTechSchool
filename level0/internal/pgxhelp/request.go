@@ -3,13 +3,16 @@ package pgxhelp
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/ermyar/WbTechSchool/l0/internal/json"
+	"github.com/ermyar/WbTechSchool/l0/internal/lru"
 	"github.com/ermyar/WbTechSchool/l0/internal/utils"
 )
 
 const (
 	orderQ = "SELECT * FROM %s WHERE order_uid = $1"
+	limitQ = "SELECT * FROM Orders LIMIT $1"
 )
 
 func getQueryStr(name string) string {
@@ -100,4 +103,56 @@ func (c *PgConnection) RequestItemsSl(orderID string) ([]json.ItemJSON, error) {
 	}
 
 	return items, nil
+}
+
+func (c *PgConnection) InitiateCache(lru lru.Cache[string]) {
+	rows, err := c.conn.Query(context.Background(), limitQ, lru.Capacity())
+	if err != nil {
+		c.log.Error("Error while quering to Postgres.Orders")
+		return
+	}
+	defer rows.Close()
+
+	var orders []json.OrderJSON
+
+	for rows.Next() {
+		var order json.OrderJSON
+		if err := rows.Scan(&order.Order_uid, &order.Track_number, &order.Entry, &order.Locate,
+			&order.Customer_id, &order.Delivery_service, &order.Shardkey, &order.Sm_id,
+			&order.Date_created, &order.Oof_shard, &order.Internal_signature); err != nil {
+			c.log.Error("Error while scanning from Postgres.Order", utils.SlogError(err))
+			return
+		}
+
+		orders = append(orders, order)
+	}
+
+	for _, order := range orders {
+		{
+			ptr, err := c.RequestDelivery(order.Order_uid)
+			if err != nil {
+				return
+			}
+			order.Delivery = *ptr
+		}
+
+		{
+			ptr, err := c.RequestPayment(order.Order_uid)
+			if err != nil {
+				return
+			}
+			order.Payment = *ptr
+		}
+
+		{
+			sl, err := c.RequestItemsSl(order.Order_uid)
+			if err != nil {
+				return
+			}
+			order.Items = sl
+		}
+
+		c.log.Info("put to cache order with", slog.String("order_uid", order.Order_uid))
+		lru.Set(order.Order_uid, &order)
+	}
 }
