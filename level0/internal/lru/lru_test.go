@@ -2,6 +2,7 @@ package lru
 
 import (
 	"math/rand"
+	"sync"
 	"testing"
 	"time"
 
@@ -101,4 +102,30 @@ func TestComparation(t *testing.T) {
 		t.Log("Time duraction to process", tc.length, "orders with cache", withCache, "using", tc.capacity, "capacity of", tc.ranged, "range")
 
 	}
+}
+
+func TestCache_concurrent(t *testing.T) {
+	cache := NewLru[string](1000)
+	numGoroutines := 10
+	numOperationsPerGoroutine := 1000
+
+	var wg sync.WaitGroup
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			for j := 0; j < numOperationsPerGoroutine; j++ {
+				key := "key" + string(rune(j))
+				value := "value" + string(rune(id)) + string(rune(j))
+
+				if j%2 == 0 {
+					cache.Set(key, value)
+				} else {
+					cache.Get(key)
+				}
+				time.Sleep(time.Microsecond)
+			}
+		}(i)
+	}
+	wg.Wait()
 }
