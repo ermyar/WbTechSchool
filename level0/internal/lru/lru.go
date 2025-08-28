@@ -2,6 +2,7 @@ package lru
 
 import (
 	"container/list"
+	"sync"
 )
 
 type Cache[T comparable] interface {
@@ -18,6 +19,7 @@ type Lru[T comparable] struct {
 	mp       map[T]*list.Element
 	list     *list.List
 	capacity int
+	mu       sync.Mutex
 }
 
 type kvPair[T comparable] struct {
@@ -41,6 +43,9 @@ func (lru *Lru[T]) pushTop(key T, value interface{}) {
 }
 
 func (lru *Lru[T]) Get(key T) (interface{}, bool) {
+	lru.mu.Lock()
+	defer lru.mu.Unlock()
+
 	if ptr, exist := lru.mp[key]; exist {
 		value := ptr.Value
 		lru.pushTop(key, value)
@@ -50,11 +55,17 @@ func (lru *Lru[T]) Get(key T) (interface{}, bool) {
 }
 
 func (lru *Lru[T]) Set(key T, value interface{}) error {
+	lru.mu.Lock()
+	defer lru.mu.Unlock()
+
 	lru.pushTop(key, value)
 	return nil
 }
 
 func (lru *Lru[T]) Clear() {
+	lru.mu.Lock()
+	defer lru.mu.Unlock()
+
 	lru.list.Init()
 	for k := range lru.mp {
 		delete(lru.mp, k)
@@ -73,5 +84,6 @@ func NewLru[T comparable](capacity int) Cache[T] {
 		make(map[T]*list.Element),
 		list.New(),
 		capacity,
+		sync.Mutex{},
 	}
 }
