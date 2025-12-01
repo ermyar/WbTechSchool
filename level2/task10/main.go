@@ -11,7 +11,7 @@ func parsing() *Config {
 	flag.BoolVarP(&conf.reverse, "reverse", "r", false, "Sorting data in reverse order")
 	flag.BoolVarP(&conf.useDigit, "numbered", "n", false, "Interpret strings like a numbers")
 	flag.BoolVarP(&conf.unique, "unique", "u", false, "Print only unique strings in output")
-	flag.IntVarP(&conf.column, "column", "k", -1, "Compare using data as a numbers")
+	flag.IntVarP(&conf.column, "column", "k", -1, "Compare using only k-column")
 	flag.BoolVarP(&conf.sorted, "check", "c", false, "Check the data sorting")
 	flag.Parse()
 	return &conf
@@ -26,5 +26,5 @@ func main() {
 
 	sortMe.Sort()
 
-	sortMe.Print()
+	sortMe.Print(os.Stdout)
 }

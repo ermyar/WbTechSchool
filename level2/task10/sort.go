@@ -52,17 +52,17 @@ func (s *Sortable) Less(i, j int) bool {
 	return s.a[i].cmpStr < s.a[j].cmpStr
 }
 
-func (s Sortable) Print() {
+func (s Sortable) Print(w io.Writer) {
 	var lst string
 	for i, pair := range s.a {
 		if s.unique && i > 0 && lst == pair.original {
 			continue
 		}
-		fmt.Println(pair.original)
+		fmt.Fprintln(w, pair.original)
 	}
 
 	if s.sorted && s.cnt > 0 {
-		fmt.Println("Data is not sorted!")
+		fmt.Fprintln(w, "Data is not sorted!")
 	}
 }
 
